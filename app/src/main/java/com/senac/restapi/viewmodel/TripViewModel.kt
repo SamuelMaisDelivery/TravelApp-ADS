@@ -11,10 +11,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.senac.restapi.database.AppDatabase
 import com.senac.restapi.database.TripEntity
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -28,13 +31,18 @@ sealed class TripOperationState {
 sealed class LocationState {
     object Idle : LocationState()
     object Loading : LocationState()
-    data class Success(val city: String) : LocationState()
+    data class Success(
+        val city: String,
+        val latitude: Double,
+        val longitude: Double
+    ) : LocationState()
     data class Error(val message: String) : LocationState()
 }
 
 class TripViewModel(application: Application) : AndroidViewModel(application) {
 
     private val tripDao = AppDatabase.getInstance(application).tripDao()
+    private val appContext = application.applicationContext
 
     private val _operationState = MutableStateFlow<TripOperationState>(TripOperationState.Idle)
     val operationState: StateFlow<TripOperationState> = _operationState
@@ -46,6 +54,8 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
     val currentTrip: StateFlow<TripEntity?> = _currentTrip
 
     private val _currentUserId = MutableStateFlow<Int?>(null)
+
+    private var locationUpdateJob: Job? = null
 
     fun setCurrentUserId(userId: Int) {
         _currentUserId.value = userId
@@ -131,50 +141,75 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
         _operationState.value = TripOperationState.Idle
     }
 
+    // Inicia atualizações periódicas de localização a cada 30 segundos
+    fun startPeriodicLocationUpdates(userId: Int) {
+        locationUpdateJob?.cancel()
+        locationUpdateJob = viewModelScope.launch {
+            while (isActive) {
+                fetchLocationAndCurrentTrip(userId)
+                delay(30_000L)
+            }
+        }
+    }
+
+    fun stopPeriodicLocationUpdates() {
+        locationUpdateJob?.cancel()
+        locationUpdateJob = null
+    }
+
     @Suppress("DEPRECATION")
+    private suspend fun fetchLocationAndCurrentTrip(userId: Int) {
+        _locationState.value = LocationState.Loading
+        try {
+            if (ContextCompat.checkSelfPermission(
+                    appContext, Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                    appContext, Manifest.permission.ACCESS_COARSE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                _locationState.value = LocationState.Error("Permissão de localização negada")
+                return
+            }
+
+            val locationManager = appContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                ?: locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER)
+
+            if (location != null) {
+                val geocoder = Geocoder(appContext, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                val city = if (!addresses.isNullOrEmpty()) {
+                    addresses[0].locality ?: addresses[0].subAdminArea ?: "Local desconhecido"
+                } else {
+                    "Local desconhecido"
+                }
+
+                _locationState.value = LocationState.Success(
+                    city = city,
+                    latitude = location.latitude,
+                    longitude = location.longitude
+                )
+
+                // Detecta viagem ativa pela data (independente da localização GPS)
+                val currentDate = System.currentTimeMillis()
+                _currentTrip.value = tripDao.getCurrentTripByDate(userId, currentDate)
+            } else {
+                _locationState.value = LocationState.Error("Localização não disponível")
+                // Mesmo sem localização GPS, verifica viagem ativa pela data
+                val currentDate = System.currentTimeMillis()
+                _currentTrip.value = tripDao.getCurrentTripByDate(userId, currentDate)
+            }
+        } catch (e: Exception) {
+            _locationState.value = LocationState.Error("Erro ao obter localização: ${e.message}")
+        }
+    }
+
+    // Mantido para compatibilidade — dispara busca imediata
     fun getCurrentLocation(context: Context, userId: Int) {
         viewModelScope.launch {
-            _locationState.value = LocationState.Loading
-            try {
-                // Verifica permissões
-                if (ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED &&
-                    ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    _locationState.value = LocationState.Error("Permissão de localização negada")
-                    return@launch
-                }
-
-                val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                    ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-
-                if (location != null) {
-                    val geocoder = Geocoder(context, Locale.getDefault())
-                    val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-
-                    if (!addresses.isNullOrEmpty()) {
-                        val city = addresses[0].locality ?: addresses[0].subAdminArea ?: "Cidade desconhecida"
-                        _locationState.value = LocationState.Success(city)
-
-                        // Busca viagem atual baseada na cidade e userId
-                        val currentDate = System.currentTimeMillis()
-                        val trip = tripDao.getCurrentTripByCity(userId, city, currentDate)
-                        _currentTrip.value = trip
-                    } else {
-                        _locationState.value = LocationState.Error("Não foi possível obter a cidade")
-                    }
-                } else {
-                    _locationState.value = LocationState.Error("Localização não disponível")
-                }
-            } catch (e: Exception) {
-                _locationState.value = LocationState.Error("Erro ao obter localização: ${e.message}")
-            }
+            fetchLocationAndCurrentTrip(userId)
         }
     }
 
@@ -188,5 +223,10 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
                 _locationState.value = LocationState.Error("Erro ao buscar viagem: ${e.message}")
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        locationUpdateJob?.cancel()
     }
 }

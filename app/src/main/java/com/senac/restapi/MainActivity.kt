@@ -8,8 +8,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senac.restapi.navigation.AppNavGraph
 import com.senac.restapi.ui.theme.RestApiTheme
 import com.senac.restapi.viewmodel.DestinationViewModel
-import com.senac.restapi.viewmodel.UserViewModel
+import com.senac.restapi.viewmodel.TripPhotoViewModel
 import com.senac.restapi.viewmodel.TripViewModel
+import com.senac.restapi.viewmodel.UserViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,10 +21,12 @@ class MainActivity : ComponentActivity() {
                 val destinationViewModel: DestinationViewModel = viewModel()
                 val userViewModel: UserViewModel = viewModel()
                 val tripViewModel: TripViewModel = viewModel()
+                val tripPhotoViewModel: TripPhotoViewModel = viewModel()
                 AppNavGraph(
                     destinationViewModel = destinationViewModel,
                     userViewModel = userViewModel,
-                    tripViewModel = tripViewModel
+                    tripViewModel = tripViewModel,
+                    tripPhotoViewModel = tripPhotoViewModel
                 )
             }
         }

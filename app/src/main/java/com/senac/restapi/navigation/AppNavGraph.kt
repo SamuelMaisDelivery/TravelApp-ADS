@@ -10,15 +10,19 @@ import com.senac.restapi.screens.ForgotPasswordScreen
 import com.senac.restapi.screens.LoginScreen
 import com.senac.restapi.screens.MenuScreen
 import com.senac.restapi.screens.RegisterScreen
+import com.senac.restapi.screens.TripPhotosScreen
 import com.senac.restapi.viewmodel.DestinationViewModel
-import com.senac.restapi.viewmodel.UserViewModel
+import com.senac.restapi.viewmodel.TripPhotoViewModel
 import com.senac.restapi.viewmodel.TripViewModel
+import com.senac.restapi.viewmodel.UserViewModel
+import java.net.URLDecoder
 
 @Composable
 fun AppNavGraph(
     destinationViewModel: DestinationViewModel,
     userViewModel: UserViewModel,
-    tripViewModel: TripViewModel
+    tripViewModel: TripViewModel,
+    tripPhotoViewModel: TripPhotoViewModel
 ) {
     val navController = rememberNavController()
 
@@ -78,7 +82,28 @@ fun AppNavGraph(
             MenuScreen(
                 destinationViewModel = destinationViewModel,
                 tripViewModel = tripViewModel,
-                userId = userId
+                userId = userId,
+                onNavigateToPhotos = { tripId, tripTitle ->
+                    navController.navigate(Screen.TripPhotos.createRoute(tripId, tripTitle))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.TripPhotos.route,
+            arguments = listOf(
+                navArgument("tripId") { type = NavType.IntType },
+                navArgument("tripTitle") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val tripId = backStackEntry.arguments?.getInt("tripId") ?: return@composable
+            val tripTitleEncoded = backStackEntry.arguments?.getString("tripTitle") ?: ""
+            val tripTitle = URLDecoder.decode(tripTitleEncoded, "UTF-8")
+            TripPhotosScreen(
+                tripId = tripId,
+                tripTitle = tripTitle,
+                tripPhotoViewModel = tripPhotoViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

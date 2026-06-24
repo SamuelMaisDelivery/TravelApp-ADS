@@ -10,8 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Database(
-    entities = [UserEntity::class, TripEntity::class, DestinationEntity::class],
-    version = 6,
+    entities = [UserEntity::class, TripEntity::class, DestinationEntity::class, TripPhotoEntity::class],
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -19,6 +19,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun tripDao(): TripDao
     abstract fun destinationDao(): DestinationDao
+    abstract fun tripPhotoDao(): TripPhotoDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null

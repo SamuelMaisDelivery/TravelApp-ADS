@@ -52,6 +52,9 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
 
+    // OSMDroid - mapa offline/online sem API key
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
+
     // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

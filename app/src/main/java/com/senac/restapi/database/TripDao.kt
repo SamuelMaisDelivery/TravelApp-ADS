@@ -27,4 +27,7 @@ interface TripDao {
 
     @Query("SELECT * FROM trips WHERE userId = :userId AND LOWER(cidade) = LOWER(:cidade) AND :currentDate BETWEEN startDate AND endDate LIMIT 1")
     suspend fun getCurrentTripByCity(userId: Int, cidade: String, currentDate: Long): TripEntity?
+
+    @Query("SELECT * FROM trips WHERE userId = :userId AND :currentDate BETWEEN startDate AND endDate ORDER BY startDate DESC LIMIT 1")
+    suspend fun getCurrentTripByDate(userId: Int, currentDate: Long): TripEntity?
 }
