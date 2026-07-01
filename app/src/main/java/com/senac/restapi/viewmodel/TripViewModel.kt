@@ -22,19 +22,19 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 sealed class TripOperationState {
-    object Idle : TripOperationState()
-    object Loading : TripOperationState()
-    object Success : TripOperationState()
+    data object Idle : TripOperationState()
+    data object Loading : TripOperationState()
+    data object Success : TripOperationState()
     data class Error(val message: String) : TripOperationState()
 }
 
 sealed class LocationState {
-    object Idle : LocationState()
-    object Loading : LocationState()
+    data object Idle : LocationState()
+    data object Loading : LocationState()
     data class Success(
         val city: String,
         val latitude: Double,
-        val longitude: Double
+        val longitude: Double,
     ) : LocationState()
     data class Error(val message: String) : LocationState()
 }
@@ -45,7 +45,6 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
     private val appContext = application.applicationContext
 
     private val _operationState = MutableStateFlow<TripOperationState>(TripOperationState.Idle)
-    val operationState: StateFlow<TripOperationState> = _operationState
 
     private val _locationState = MutableStateFlow<LocationState>(LocationState.Idle)
     val locationState: StateFlow<LocationState> = _locationState
@@ -67,8 +66,8 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
             MutableStateFlow<List<TripEntity>>(emptyList()).apply {
                 viewModelScope.launch {
                     userIdFlow.collect { userId ->
-                        if (userId != null) {
-                            tripDao.getTripsByUserId(userId).collect { trips ->
+                        userId?.let {
+                            tripDao.getTripsByUserId(it).collect { trips ->
                                 value = trips
                             }
                         }
@@ -137,9 +136,6 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun resetOperationState() {
-        _operationState.value = TripOperationState.Idle
-    }
 
     // Inicia atualizações periódicas de localização a cada 30 segundos
     fun startPeriodicLocationUpdates(userId: Int) {
@@ -161,12 +157,12 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun fetchLocationAndCurrentTrip(userId: Int) {
         _locationState.value = LocationState.Loading
         try {
-            if (ContextCompat.checkSelfPermission(
+            if ((ContextCompat.checkSelfPermission(
                     appContext, Manifest.permission.ACCESS_FINE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
+                ) != PackageManager.PERMISSION_GRANTED) &&
+                (ContextCompat.checkSelfPermission(
                     appContext, Manifest.permission.ACCESS_COARSE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
+                ) != PackageManager.PERMISSION_GRANTED)
             ) {
                 _locationState.value = LocationState.Error("Permissão de localização negada")
                 return
@@ -206,24 +202,6 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Mantido para compatibilidade — dispara busca imediata
-    fun getCurrentLocation(context: Context, userId: Int) {
-        viewModelScope.launch {
-            fetchLocationAndCurrentTrip(userId)
-        }
-    }
-
-    fun searchCurrentTripByCity(userId: Int, city: String) {
-        viewModelScope.launch {
-            try {
-                val currentDate = System.currentTimeMillis()
-                val trip = tripDao.getCurrentTripByCity(userId, city, currentDate)
-                _currentTrip.value = trip
-            } catch (e: Exception) {
-                _locationState.value = LocationState.Error("Erro ao buscar viagem: ${e.message}")
-            }
-        }
-    }
 
     override fun onCleared() {
         super.onCleared()

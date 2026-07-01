@@ -6,12 +6,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -21,13 +21,14 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.senac.restapi.ui.theme.*
 import com.senac.restapi.viewmodel.ProductViewModel
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailScreen(
     productId: Int,
     productViewModel: ProductViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val products by productViewModel.products.collectAsState()
     val product = products.find { it.id == productId }
@@ -45,7 +46,7 @@ fun ProductDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = TravelOnPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = TravelOnPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -109,7 +110,7 @@ fun ProductDetailScreen(
                         .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = "R$ ${String.format("%.2f", product.price)}",
+                        text = "R$ ${String.format(Locale.getDefault(), "%.2f", product.price)}",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = TravelOnPrimary
@@ -164,7 +165,7 @@ fun ProductDetailScreen(
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("Informações do Pacote", fontWeight = FontWeight.Bold, color = TravelBlueDark, fontSize = 15.sp)
                         DetailRow(icon = "🆔", label = "Código", value = "#${product.id}")
-                        DetailRow(icon = "💰", label = "Valor", value = "R$ ${String.format("%.2f", product.price)}")
+                        DetailRow(icon = "💰", label = "Valor", value = "R$ ${String.format(Locale.getDefault(), "%.2f", product.price)}")
                         DetailRow(icon = "📦", label = "Categoria", value = product.title.take(20))
                     }
                 }

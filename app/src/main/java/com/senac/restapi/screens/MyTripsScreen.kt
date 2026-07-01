@@ -7,7 +7,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -16,6 +15,7 @@ import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,11 +38,11 @@ import java.util.*
 @Composable
 fun MyTripsScreen(
     tripViewModel: TripViewModel,
-    userId: Int
+    userId: Int,
 ) {
     val trips by tripViewModel.userTrips.collectAsStateWithLifecycle()
     var tripToEdit by remember { mutableStateOf<TripEntity?>(null) }
-    var showEditDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(value = false) }
 
     LaunchedEffect(userId) {
         tripViewModel.setCurrentUserId(userId)
@@ -91,9 +91,7 @@ fun MyTripsScreen(
                             tripToEdit = trip
                             showEditDialog = true
                         },
-                        onDelete = {
-                            tripViewModel.deleteTrip(trip)
-                        }
+                        onDelete = { tripViewModel.deleteTrip(trip) }
                     )
 
                     // Barra preta separadora
@@ -108,7 +106,7 @@ fun MyTripsScreen(
     }
 
     // Dialog de edição
-    if (showEditDialog && tripToEdit != null) {
+    if (showEditDialog && (tripToEdit != null)) {
         EditTripDialog(
             trip = tripToEdit!!,
             onDismiss = {
@@ -278,8 +276,8 @@ fun EditTripDialog(
 ) {
     var selectedTripType by remember { mutableStateOf(trip.tripType) }
     var expanded by remember { mutableStateOf(false) }
-    var startDate by remember { mutableStateOf(trip.startDate) }
-    var endDate by remember { mutableStateOf(trip.endDate) }
+    var startDate by remember { mutableLongStateOf(trip.startDate) }
+    var endDate by remember { mutableLongStateOf(trip.endDate) }
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
@@ -314,7 +312,7 @@ fun EditTripDialog(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(),
+                            .menuAnchor(type = MenuAnchorType.PrimaryEditable, enabled = true),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = TravelGreen,
@@ -399,7 +397,9 @@ fun EditTripDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss
+            ) {
                 Text("Cancelar", color = TravelGray)
             }
         },

@@ -64,9 +64,9 @@ fun MenuScreen(
     destinationViewModel: DestinationViewModel,
     tripViewModel: TripViewModel,
     userId: Int,
-    onNavigateToPhotos: (tripId: Int, tripTitle: String) -> Unit
+    onNavigateToPhotos: (tripId: Int, tripTitle: String) -> Unit,
+    onNavigateToItinerary: (tripId: Int) -> Unit
 ) {
-    val context = LocalContext.current
     val destinations by destinationViewModel.destinations.collectAsStateWithLifecycle()
     val isLoading by destinationViewModel.loadState.collectAsStateWithLifecycle()
     val locationState by tripViewModel.locationState.collectAsStateWithLifecycle()
@@ -75,19 +75,9 @@ fun MenuScreen(
     var selectedMenuItem by remember { mutableStateOf(MenuItem.HOME) }
     var showPurchaseDialog by remember { mutableStateOf(false) }
     var selectedDestination by remember { mutableStateOf<DestinationPurchaseData?>(null) }
-    var showRoteiroSnackbar by remember { mutableStateOf(false) }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // Snackbar para "Roteiro" (a ser implementado)
-    LaunchedEffect(showRoteiroSnackbar) {
-        if (showRoteiroSnackbar) {
-            snackbarHostState.showSnackbar("Roteiro será implementado em breve!")
-            showRoteiroSnackbar = false
-        }
-    }
 
     // Launcher para permissões de localização
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -147,7 +137,7 @@ fun MenuScreen(
                     HorizontalDivider(color = TravelGreenLight.copy(alpha = 0.4f))
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    MenuItem.values().forEach { menuItem ->
+                    MenuItem.entries.forEach { menuItem ->
                         NavigationDrawerItem(
                             icon = {
                                 Icon(
@@ -182,7 +172,6 @@ fun MenuScreen(
         }
     ) {
         Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
                     title = {
@@ -220,7 +209,7 @@ fun MenuScreen(
             bottomBar = {
                 if (isOnHome && hasCurrentTrip) {
                     TripBottomBar(
-                        onRoteiro = { showRoteiroSnackbar = true },
+                        onRoteiro = { currentTrip?.let { onNavigateToItinerary(it.id) } },
                         onFotos = {
                             currentTrip?.let { trip ->
                                 onNavigateToPhotos(trip.id, trip.productTitle)
@@ -377,8 +366,7 @@ fun HomeContent(
                 } else {
                     item {
                         CurrentTripCard(
-                            locationState = locationState,
-                            currentTrip = null
+                            locationState = locationState
                         )
                     }
                 }
@@ -543,8 +531,8 @@ fun ActiveTripMapCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider(color = TravelGreenLight.copy(alpha = 0.3f))
                 Spacer(modifier = Modifier.height(8.dp))
-                InfoRow(label = "Orçamento:", value = "R$ ${String.format("%.2f", currentTrip.orcamento)}")
-                InfoRow(label = "Gastos:", value = "R$ ${String.format("%.2f", currentTrip.totalGastos)}")
+                InfoRow(label = "Orçamento:", value = "R$ ${String.format(Locale.getDefault(), "%.2f", currentTrip.orcamento)}")
+                InfoRow(label = "Gastos:", value = "R$ ${String.format(Locale.getDefault(), "%.2f", currentTrip.totalGastos)}")
             }
         }
     }
@@ -611,8 +599,7 @@ fun TripMapView(
 
 @Composable
 fun CurrentTripCard(
-    locationState: LocationState,
-    currentTrip: TripEntity?
+    locationState: LocationState
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -752,7 +739,7 @@ fun DestinationCard(destination: com.senac.restapi.database.DestinationEntity) {
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "R$ ${String.format("%.2f", destination.price)}",
+                    text = "R$ ${String.format(Locale.getDefault(), "%.2f", destination.price)}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = TravelGreen

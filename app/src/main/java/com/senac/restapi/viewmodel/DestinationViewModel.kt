@@ -12,9 +12,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 sealed class DestinationLoadState {
-    object Idle : DestinationLoadState()
-    object Loading : DestinationLoadState()
-    object Success : DestinationLoadState()
+    data object Idle : DestinationLoadState()
+    data object Loading : DestinationLoadState()
+    data object Success : DestinationLoadState()
     data class Error(val message: String) : DestinationLoadState()
 }
 
@@ -29,7 +29,7 @@ class DestinationViewModel(application: Application) : AndroidViewModel(applicat
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
+            initialValue = emptyList(),
         )
 
     init {
@@ -160,7 +160,4 @@ class DestinationViewModel(application: Application) : AndroidViewModel(applicat
         destinationDao.insertAllDestinations(destinations)
     }
 
-    suspend fun getDestinationById(id: Int): DestinationEntity? {
-        return destinationDao.getDestinationById(id)
-    }
 }

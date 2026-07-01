@@ -13,5 +13,5 @@ data class DestinationEntity(
     val rating: Double,
     val cidade: String,
     val estado: String,
-    val tipo: String // "Lazer" ou "Negócios"
+    val tipo: String, // "Lazer" ou "Negócios"
 )

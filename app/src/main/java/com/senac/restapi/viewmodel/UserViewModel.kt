@@ -10,15 +10,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 sealed class RegisterState {
-    object Idle : RegisterState()
-    object Loading : RegisterState()
-    object Success : RegisterState()
+    data object Idle : RegisterState()
+    data object Loading : RegisterState()
+    data object Success : RegisterState()
     data class Error(val message: String) : RegisterState()
 }
 
 sealed class LoginState {
-    object Idle : LoginState()
-    object Loading : LoginState()
+    data object Idle : LoginState()
+    data object Loading : LoginState()
     data class Success(val user: UserEntity) : LoginState()
     data class Error(val message: String) : LoginState()
 }

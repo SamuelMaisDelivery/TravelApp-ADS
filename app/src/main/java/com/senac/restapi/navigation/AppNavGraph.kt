@@ -7,11 +7,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.senac.restapi.screens.ForgotPasswordScreen
+import com.senac.restapi.screens.ItineraryScreen
 import com.senac.restapi.screens.LoginScreen
 import com.senac.restapi.screens.MenuScreen
 import com.senac.restapi.screens.RegisterScreen
 import com.senac.restapi.screens.TripPhotosScreen
 import com.senac.restapi.viewmodel.DestinationViewModel
+import com.senac.restapi.viewmodel.ItineraryViewModel
 import com.senac.restapi.viewmodel.TripPhotoViewModel
 import com.senac.restapi.viewmodel.TripViewModel
 import com.senac.restapi.viewmodel.UserViewModel
@@ -22,7 +24,8 @@ fun AppNavGraph(
     destinationViewModel: DestinationViewModel,
     userViewModel: UserViewModel,
     tripViewModel: TripViewModel,
-    tripPhotoViewModel: TripPhotoViewModel
+    tripPhotoViewModel: TripPhotoViewModel,
+    itineraryViewModel: ItineraryViewModel
 ) {
     val navController = rememberNavController()
 
@@ -85,6 +88,9 @@ fun AppNavGraph(
                 userId = userId,
                 onNavigateToPhotos = { tripId, tripTitle ->
                     navController.navigate(Screen.TripPhotos.createRoute(tripId, tripTitle))
+                },
+                onNavigateToItinerary = { tripId ->
+                    navController.navigate(Screen.Itinerary.createRoute(tripId))
                 }
             )
         }
@@ -103,6 +109,18 @@ fun AppNavGraph(
                 tripId = tripId,
                 tripTitle = tripTitle,
                 tripPhotoViewModel = tripPhotoViewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.Itinerary.route,
+            arguments = listOf(navArgument("tripId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val tripId = backStackEntry.arguments?.getInt("tripId") ?: return@composable
+            ItineraryScreen(
+                tripId = tripId,
+                itineraryViewModel = itineraryViewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

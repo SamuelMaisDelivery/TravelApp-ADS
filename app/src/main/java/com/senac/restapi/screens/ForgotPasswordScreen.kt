@@ -7,9 +7,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,11 +25,11 @@ import com.senac.restapi.ui.theme.*
 @Composable
 fun ForgotPasswordScreen(
     onEmailSent: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     var email by remember { mutableStateOf("") }
     var emailError by remember { mutableStateOf("") }
-    var showSuccess by remember { mutableStateOf(false) }
+    var showSuccess by remember { mutableStateOf(value = false) }
 
     Scaffold(
         topBar = {
@@ -37,7 +37,7 @@ fun ForgotPasswordScreen(
                 title = { Text("Recuperar Senha", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = TravelOnPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = TravelOnPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -137,7 +137,7 @@ fun ForgotPasswordScreen(
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = TravelBlue)
                         ) {
-                            Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Enviar link de recuperação", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
