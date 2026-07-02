@@ -69,6 +69,7 @@ class GeminiRepository {
             append(trip.productTitle)
             if (trip.cidade.isNotBlank()) append(" — ${trip.cidade}")
         }
+        val orcamentoFormatted = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", trip.orcamento)
 
         return """
 Você é um especialista em turismo e planejamento de viagens internacionais.
@@ -77,6 +78,7 @@ Sua tarefa é criar um roteiro completo e inteligente utilizando as seguintes in
 * Data de início: $startFormatted
 * Data de término: $endFormatted
 * Motivo da viagem: ${trip.tripType} (Lazer ou Negócios)
+* Orçamento disponível para a viagem inteira (hospedagem à parte; considere apenas alimentação, passeios, ingressos e transporte local): R$ $orcamentoFormatted
 
 Regras Gerais
 1. Calcule automaticamente a quantidade de dias da viagem utilizando a data de início e a data de término.
@@ -88,6 +90,15 @@ Regras Gerais
 7. Considere fatores sazonais da época da viagem (clima, eventos importantes, feriados e alta/baixa temporada), caso sejam relevantes.
 8. Caso o destino possua atrações que exijam reserva antecipada, informe isso.
 9. Inclua uma estimativa aproximada de tempo em cada atividade.
+
+Regras de Orçamento (muito importantes)
+1. O custo total estimado do roteiro (passeios, ingressos, alimentação e transporte local) NÃO PODE ultrapassar o orçamento de R$ $orcamentoFormatted informado acima.
+2. Distribua o orçamento de forma inteligente entre os dias, aproveitando o valor disponível ao máximo — evite sobrar valor relevante sem uso e evite estourar o limite.
+3. Priorize a melhor relação custo-benefício: combine atrações gratuitas ou de baixo custo com experiências de maior valor que enriqueçam a viagem, sem comprometer o limite total.
+4. Para cada atividade com custo, informe o valor estimado em reais (R$), para que o total do dia e da viagem possa ser conferido.
+5. Ao final de cada dia, informe o subtotal estimado de gastos do dia.
+6. Caso o orçamento seja apertado para o destino e duração informados, priorize as experiências mais relevantes e utilize opções econômicas (transporte público, restaurantes populares bem avaliados, atrações gratuitas) para manter o roteiro dentro do limite.
+7. Caso o orçamento seja generoso, aproveite para incluir experiências mais completas (passeios guiados, restaurantes mais renomados, atividades extras) sempre respeitando o teto informado.
 
 Se a viagem for Lazer
 O roteiro deve priorizar:
@@ -165,6 +176,7 @@ Resumo da viagem
 * Tomadas elétricas
 * Clima esperado durante a viagem
 * Orçamento diário estimado (econômico, intermediário e confortável)
+* Custo total estimado do roteiro e comparação com o orçamento de R$ $orcamentoFormatted informado (quanto foi utilizado e quanto restou)
 
 Regras importantes
 * O roteiro deve ser realista.
@@ -174,6 +186,7 @@ Regras importantes
 * Caso o número de dias seja pequeno, priorize as atrações mais relevantes.
 * Caso a viagem seja longa, distribua o roteiro de forma confortável, evitando dias excessivamente cansativos.
 * Sempre adapte as recomendações ao destino específico, independentemente do país ou cidade.
+* Nunca ultrapasse o orçamento total informado.
         """.trimIndent()
     }
 }

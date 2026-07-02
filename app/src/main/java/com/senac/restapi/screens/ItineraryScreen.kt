@@ -12,7 +12,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +39,7 @@ import com.senac.restapi.ui.theme.*
 import com.senac.restapi.viewmodel.ItineraryState
 import com.senac.restapi.viewmodel.ItineraryTripInfo
 import com.senac.restapi.viewmodel.ItineraryViewModel
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -297,32 +302,87 @@ private fun ItineraryContent(
     onRetry: () -> Unit
 ) {
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("pt-BR")) }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        item {
-            TripHeaderCard(
-                tripInfo = tripInfo,
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (parsed.days.size > 1) {
+            DaySelectorBar(
                 dayCount = parsed.days.size,
-                dateFormat = dateFormat
+                listState = listState,
+                onDaySelected = { dayIndex ->
+                    scope.launch {
+                        // +1 desloca pelo item do cabeçalho da viagem
+                        listState.animateScrollToItem(dayIndex + 1)
+                    }
+                }
             )
         }
 
-        if (parsed.days.isEmpty() && parsed.summary.isEmpty()) {
-            item { RawFallbackCard(text = "O Gemini retornou um formato inesperado. Tente novamente.", onRetry = onRetry) }
-        } else {
-            itemsIndexed(parsed.days, key = { i, _ -> i }) { index, day ->
-                DayCard(day = day, dayIndex = index)
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            item {
+                TripHeaderCard(
+                    tripInfo = tripInfo,
+                    dayCount = parsed.days.size,
+                    dateFormat = dateFormat
+                )
             }
-            if (parsed.summary.isNotEmpty()) {
-                item { SummaryCard(content = parsed.summary) }
+
+            if (parsed.days.isEmpty() && parsed.summary.isEmpty()) {
+                item { RawFallbackCard(text = "O Gemini retornou um formato inesperado. Tente novamente.", onRetry = onRetry) }
+            } else {
+                itemsIndexed(parsed.days, key = { i, _ -> i }) { index, day ->
+                    DayCard(day = day, dayIndex = index, initiallyExpanded = index == 0)
+                }
+                if (parsed.summary.isNotEmpty()) {
+                    item { SummaryCard(content = parsed.summary) }
+                }
+            }
+
+            item { Spacer(Modifier.height(16.dp)) }
+        }
+    }
+}
+
+// ── Day selector bar ──────────────────────────────────────────────────────────
+
+@Composable
+private fun DaySelectorBar(
+    dayCount: Int,
+    listState: LazyListState,
+    onDaySelected: (Int) -> Unit
+) {
+    val selectedDay by remember {
+        derivedStateOf { (listState.firstVisibleItemIndex - 1).coerceIn(0, dayCount - 1) }
+    }
+
+    Surface(color = TravelCardBg, shadowElevation = 3.dp) {
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(dayCount) { index ->
+                val isSelected = index == selectedDay
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (isSelected) TravelGreen else TravelGreen.copy(alpha = 0.1f),
+                    modifier = Modifier.clickable { onDaySelected(index) }
+                ) {
+                    Text(
+                        text = "Dia ${index + 1}",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSelected) TravelOnPrimary else TravelGreenDark,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                    )
+                }
             }
         }
-
-        item { Spacer(Modifier.height(16.dp)) }
     }
 }
 
@@ -489,8 +549,8 @@ private fun TripHeaderCard(
 // ── Day card ──────────────────────────────────────────────────────────────────
 
 @Composable
-private fun DayCard(day: ItineraryDay, dayIndex: Int) {
-    var expanded by remember { mutableStateOf(true) }
+private fun DayCard(day: ItineraryDay, dayIndex: Int, initiallyExpanded: Boolean = true) {
+    var expanded by remember { mutableStateOf(initiallyExpanded) }
     val chevronRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
         animationSpec = tween(300),

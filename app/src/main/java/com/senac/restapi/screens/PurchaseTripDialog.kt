@@ -3,10 +3,12 @@ package com.senac.restapi.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.senac.restapi.ui.theme.*
@@ -18,10 +20,11 @@ import java.util.*
 fun PurchaseTripDialog(
     productTitle: String,
     onDismiss: () -> Unit,
-    onConfirm: (startDate: Long, endDate: Long) -> Unit
+    onConfirm: (startDate: Long, endDate: Long, orcamento: Double) -> Unit
 ) {
     var startDate by remember { mutableStateOf<Long?>(null) }
     var endDate by remember { mutableStateOf<Long?>(null) }
+    var orcamentoText by remember { mutableStateOf("") }
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
@@ -92,6 +95,34 @@ fun PurchaseTripDialog(
                     )
                 )
 
+                // Orçamento disponível
+                OutlinedTextField(
+                    value = orcamentoText,
+                    onValueChange = { input ->
+                        if (input.isEmpty() || input.matches(Regex("^\\d*[.,]?\\d{0,2}$"))) {
+                            orcamentoText = input
+                        }
+                    },
+                    label = { Text("Orçamento disponível (R$)") },
+                    placeholder = { Text("Ex: 3000,00") },
+                    leadingIcon = {
+                        Icon(Icons.Default.AttachMoney, contentDescription = null, tint = TravelGreen)
+                    },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = TravelGreen,
+                        unfocusedBorderColor = TravelGreenLight
+                    )
+                )
+                Text(
+                    text = "Vamos montar um roteiro que aproveite ao máximo esse valor.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TravelGray
+                )
+
                 if (errorMessage.isNotEmpty()) {
                     Text(
                         text = errorMessage,
@@ -104,12 +135,14 @@ fun PurchaseTripDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    val orcamento = orcamentoText.replace(",", ".").toDoubleOrNull()
                     when {
                         startDate == null -> errorMessage = "Selecione a data de início"
                         endDate == null -> errorMessage = "Selecione a data de fim"
                         endDate!! < startDate!! -> errorMessage = "Data de fim deve ser posterior à data de início"
+                        orcamento == null || orcamento <= 0.0 -> errorMessage = "Informe um orçamento válido"
                         else -> {
-                            onConfirm(startDate!!, endDate!!)
+                            onConfirm(startDate!!, endDate!!, orcamento)
                             onDismiss()
                         }
                     }

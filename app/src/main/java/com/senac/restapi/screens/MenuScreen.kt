@@ -32,6 +32,7 @@ import com.senac.restapi.database.TripEntity
 import com.senac.restapi.ui.theme.*
 import com.senac.restapi.viewmodel.DestinationViewModel
 import com.senac.restapi.viewmodel.LocationState
+import com.senac.restapi.viewmodel.TripOperationState
 import com.senac.restapi.viewmodel.TripViewModel
 import kotlinx.coroutines.launch
 import org.osmdroid.config.Configuration
@@ -71,6 +72,7 @@ fun MenuScreen(
     val isLoading by destinationViewModel.loadState.collectAsStateWithLifecycle()
     val locationState by tripViewModel.locationState.collectAsStateWithLifecycle()
     val currentTrip by tripViewModel.currentTrip.collectAsStateWithLifecycle()
+    val purchaseState by tripViewModel.purchaseState.collectAsStateWithLifecycle()
 
     var selectedMenuItem by remember { mutableStateOf(MenuItem.HOME) }
     var showPurchaseDialog by remember { mutableStateOf(false) }
@@ -78,6 +80,21 @@ fun MenuScreen(
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(purchaseState) {
+        when (val purchase = purchaseState) {
+            is TripOperationState.Success -> {
+                snackbarHostState.showSnackbar("Viagem adquirida com sucesso! ✈️")
+                tripViewModel.resetPurchaseState()
+            }
+            is TripOperationState.Error -> {
+                snackbarHostState.showSnackbar(purchase.message)
+                tripViewModel.resetPurchaseState()
+            }
+            else -> Unit
+        }
+    }
 
     // Launcher para permissões de localização
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -172,6 +189,7 @@ fun MenuScreen(
         }
     ) {
         Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
                     title = {
@@ -263,7 +281,7 @@ fun MenuScreen(
                 showPurchaseDialog = false
                 selectedDestination = null
             },
-            onConfirm = { startDate, endDate ->
+            onConfirm = { startDate, endDate, orcamento ->
                 tripViewModel.addTrip(
                     userId = userId,
                     productId = destination.destinationId,
@@ -273,7 +291,8 @@ fun MenuScreen(
                     tripType = destination.tipo,
                     startDate = startDate,
                     endDate = endDate,
-                    cidade = destination.cidade
+                    cidade = destination.cidade,
+                    orcamento = orcamento
                 )
                 showPurchaseDialog = false
                 selectedDestination = null

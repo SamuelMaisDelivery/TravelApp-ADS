@@ -46,6 +46,9 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _operationState = MutableStateFlow<TripOperationState>(TripOperationState.Idle)
 
+    private val _purchaseState = MutableStateFlow<TripOperationState>(TripOperationState.Idle)
+    val purchaseState: StateFlow<TripOperationState> = _purchaseState
+
     private val _locationState = MutableStateFlow<LocationState>(LocationState.Idle)
     val locationState: StateFlow<LocationState> = _locationState
 
@@ -89,7 +92,7 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
         orcamento: Double = 0.0
     ) {
         viewModelScope.launch {
-            _operationState.value = TripOperationState.Loading
+            _purchaseState.value = TripOperationState.Loading
             try {
                 val trip = TripEntity(
                     userId = userId,
@@ -105,11 +108,15 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
                     totalGastos = 0.0
                 )
                 tripDao.insertTrip(trip)
-                _operationState.value = TripOperationState.Success
+                _purchaseState.value = TripOperationState.Success
             } catch (e: Exception) {
-                _operationState.value = TripOperationState.Error("Erro ao adicionar viagem: ${e.message}")
+                _purchaseState.value = TripOperationState.Error("Erro ao adicionar viagem: ${e.message}")
             }
         }
+    }
+
+    fun resetPurchaseState() {
+        _purchaseState.value = TripOperationState.Idle
     }
 
     fun updateTrip(trip: TripEntity) {
